@@ -1,6 +1,9 @@
 const User = require("../models/user");
 const bcrypt = require("bcrypt");
-const sendEmail = require('../utils/email.js')
+const sendEmail = require('../utils/email.js');
+const jwt = require('jsonwebtoken');
+const { NODE_ENV } = require("../utils/config.js");
+const {JWT_SECRET} = require('../utils/config.js')
 
 const authController = {
   register: async (req, res) => {
@@ -69,7 +72,29 @@ const authController = {
         return res.status(500).json({message: "Invalid Password"})
       }
 
-      return res.status(200).json({message:'Login SuccessFully'})
+      //generate a jwt token
+      const token  = jwt.sign({userId: user._id}, JWT_SECRET, )
+
+      //set a token as a cookie
+      res.cookie('token', token,{
+        httpOnly: true,
+        secure: NODE_ENV === 'production',
+        sameSite: NODE_ENV === 'production' ? "none" : 'lax',
+        maxAge: 24 * 60 * 60 * 1000 //24hours
+
+      })
+
+      return res.status(200).json({message:'Login SuccessFully',
+        user: {
+        id: user._id,
+        name: user.name,
+        email:user.email,
+        role:user.role,
+        assignedCompany: user.assignedCompany || null
+      }
+      })
+
+
       
     } catch (error) {
        res

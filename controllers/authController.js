@@ -51,6 +51,32 @@ const authController = {
         .json({ message: "Error User Registration", error: error.message });
     }
   },
+  login: async(req,res) => {
+    try {
+
+      const {email, password} = req.body;
+
+      //check user is exists or not
+      const user =await User.findOne({email})
+
+      if(!user) {
+        res.status(500).json({message: 'Email is not Exists'})
+      }
+
+      const isMatch = await bcrypt.compare(password, user.password) 
+
+      if(!isMatch){
+        return res.status(500).json({message: "Invalid Password"})
+      }
+
+      return res.status(200).json({message:'Login SuccessFully'})
+      
+    } catch (error) {
+       res
+        .status(500)
+        .json({ message: "Login Failed", error: error.message });
+    }
+  }
 };
 
 module.exports = authController;

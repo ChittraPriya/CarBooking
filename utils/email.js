@@ -15,7 +15,8 @@ const sendEmail = async( to, subject, text) => {
         from: EMAIL_USER,
         to: to,
         subject: subject,
-        text: text
+        text: text,
+        html
     }
 
     const info = await transporter.sendMail(mailOptions)

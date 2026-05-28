@@ -1,9 +1,9 @@
 const User = require("../models/user");
 const bcrypt = require("bcrypt");
-const sendEmail = require('../utils/email.js');
-const jwt = require('jsonwebtoken');
+const sendEmail = require("../utils/email.js");
+const jwt = require("jsonwebtoken");
 const { NODE_ENV } = require("../utils/config.js");
-const {JWT_SECRET} = require('../utils/config.js')
+const { JWT_SECRET } = require("../utils/config.js");
 
 const authController = {
   register: async (req, res) => {
@@ -49,59 +49,84 @@ const authController = {
 
       res.status(201).json({ message: "User Registered Successfully" });
     } catch (error) {
+      console.error("REGISTER ERROR:", error);
       res
         .status(500)
         .json({ message: "Error User Registration", error: error.message });
     }
   },
-  login: async(req,res) => {
+  login: async (req, res) => {
     try {
-
-      const {email, password} = req.body;
+      const { email, password } = req.body;
 
       //check user is exists or not
-      const user =await User.findOne({email})
+      const user = await User.findOne({ email });
 
-      if(!user) {
-        res.status(500).json({message: 'Email is not Exists'})
+      if (!user) {
+        return res.status(404).json({ message: "Email does not exist" });
       }
 
-      const isMatch = await bcrypt.compare(password, user.password) 
+      const isMatch = await bcrypt.compare(password, user.password);
 
-      if(!isMatch){
-        return res.status(500).json({message: "Invalid Password"})
+      if (!isMatch) {
+        return res.status(500).json({ message: "Invalid Password" });
       }
 
       //generate a jwt token
-      const token  = jwt.sign({userId: user._id}, JWT_SECRET, )
+      const token = jwt.sign(
+        { userId: user._id, role: user.role },
+        JWT_SECRET,
+        { expiresIn: "1d" },
+      );
 
       //set a token as a cookie
-      res.cookie('token', token,{
+      res.cookie("token", token, {
         httpOnly: true,
-        secure: NODE_ENV === 'production',
-        sameSite: NODE_ENV === 'production' ? "none" : 'lax',
-        maxAge: 24 * 60 * 60 * 1000 //24hours
+        secure: NODE_ENV === "production",
+        sameSite: NODE_ENV === "production" ? "none" : "lax",
+        maxAge: 24 * 60 * 60 * 1000, //24hours
+      });
 
-      })
-
-      return res.status(200).json({message:'Login SuccessFully',
+      return res.status(200).json({
+        message: "Login SuccessFully",
         user: {
-        id: user._id,
-        name: user.name,
-        email:user.email,
-        role:user.role,
-        assignedCompany: user.assignedCompany || null
-      }
-      })
-
-
-      
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        },
+      });
     } catch (error) {
-       res
-        .status(500)
-        .json({ message: "Login Failed", error: error.message });
+      console.log("Login Error:", error)
+      res.status(500).json({ message: "Login Failed", error: error.message });
     }
-  }
-};
+  },
+  getMe: async (req, res) => {
+    try {
+      //get the user id
+      const userId = req.user.id;
 
+      //find the user by id
+      const user = await User.findById(userId).select("name email role");
+
+      //if the user does not exits,return no error
+      if (!user) {
+        return res.status(404).json({ message: "User Not Found" });
+      }
+
+      res.status(200).json({ user });
+    } catch (error) {
+      res.status(500).json({ message: "Error Fetching", error: error.message });
+    }
+  },
+
+logoutUser : (req, res) => {
+  res.cookie("token", "", {
+    httpOnly: true,
+    expires: new Date(0),
+  });
+
+  res.status(200).json({ message: "Logged out successfully" });
+}
+}
 module.exports = authController;

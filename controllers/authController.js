@@ -82,9 +82,9 @@ const authController = {
       //set a token as a cookie
       res.cookie("token", token, {
         httpOnly: true,
-        secure: NODE_ENV === "production",
-        sameSite: NODE_ENV === "production" ? "none" : "lax",
-        maxAge: 24 * 60 * 60 * 1000, //24hours
+        secure: true,
+        sameSite: "none",
+        maxAge: 24 * 60 * 60 * 1000,
       });
 
       return res.status(200).json({
@@ -97,7 +97,7 @@ const authController = {
         },
       });
     } catch (error) {
-      console.log("Login Error:", error)
+      console.log("Login Error:", error);
       res.status(500).json({ message: "Login Failed", error: error.message });
     }
   },
@@ -120,13 +120,13 @@ const authController = {
     }
   },
 
-logoutUser : (req, res) => {
-  res.cookie("token", "", {
-    httpOnly: true,
-    expires: new Date(0),
-  });
+  logoutUser: (req, res) => {
+    res.cookie("token", "", {
+      httpOnly: true,
+      expires: new Date(0),
+    });
 
-  res.status(200).json({ message: "Logged out successfully" });
-}
-}
+    res.status(200).json({ message: "Logged out successfully" });
+  },
+};
 module.exports = authController;
